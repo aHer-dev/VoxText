@@ -23,7 +23,7 @@ const LANGUAGES = [
   { value: 'ar', label: 'Arabisch' },
 ]
 
-export default function UploadScreen({ onTranscriptionComplete, onProgress }) {
+export default function UploadScreen({ onTranscriptionComplete, onProgress, onCancel }) {
   const [mode, setMode] = useState('file')
   const [queue, setQueue] = useState([])
   const [dragActive, setDragActive] = useState(false)
@@ -167,7 +167,10 @@ export default function UploadScreen({ onTranscriptionComplete, onProgress }) {
 
   function handleCancel() {
     cancelledRef.current = true
-    if (currentRecordingId) cancel(currentRecordingId)
+    if (currentRecordingId) {
+      cancel(currentRecordingId)
+      onCancel?.(currentRecordingId)
+    }
     setProcessing(false)
     setProgress(0)
     setPhase('')

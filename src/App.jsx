@@ -44,6 +44,7 @@ export default function App() {
           <UploadScreen
             onTranscriptionComplete={handleTranscriptionComplete}
             onProgress={(id, pct) => updateRecording(id, { progress: pct })}
+            onCancel={(id) => updateRecording(id, { status: 'cancelled', progress: 0 })}
           />
         )}
         {view === 'transcript' && activeRecording && (
