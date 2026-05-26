@@ -37,6 +37,7 @@ export default function App() {
         activeId={activeId}
         onSelect={openRecording}
         onNew={newTranscription}
+        onDelete={deleteRecording}
       />
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--vx-cream)' }}>
         {view === 'upload' && (

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { formatDuration } from '../lib/segmentUtils.js'
 
-export default function Sidebar({ recordings, activeId, onSelect, onNew }) {
+export default function Sidebar({ recordings, activeId, onSelect, onNew, onDelete }) {
   const [query, setQuery] = useState('')
+  const [hoveredId, setHoveredId] = useState(null)
 
   const filtered = recordings.filter(r =>
     r.title.toLowerCase().includes(query.toLowerCase())
@@ -89,15 +90,19 @@ export default function Sidebar({ recordings, activeId, onSelect, onNew }) {
         )}
         {filtered.map(rec => {
           const isActive = rec.id === activeId
+          const isHovered = hoveredId === rec.id
           return (
             <div
               key={rec.id}
               onClick={() => rec.status === 'ready' && onSelect(rec.id)}
+              onMouseEnter={() => setHoveredId(rec.id)}
+              onMouseLeave={() => setHoveredId(null)}
               style={{
                 padding: '10px 12px', borderRadius: 5, marginBottom: 1,
-                background: isActive ? 'var(--vx-ink-2)' : 'transparent',
+                background: isActive ? 'var(--vx-ink-2)' : isHovered ? '#141414' : 'transparent',
                 cursor: rec.status === 'ready' ? 'pointer' : 'default',
                 position: 'relative',
+                transition: 'background 0.1s',
               }}
             >
               {isActive && (
@@ -110,6 +115,7 @@ export default function Sidebar({ recordings, activeId, onSelect, onNew }) {
                 fontSize: 13, color: isActive ? '#fff' : '#D0D0D0',
                 fontWeight: isActive ? 500 : 400, marginBottom: 3,
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                paddingRight: isHovered ? 20 : 0,
               }}>
                 {rec.title}
               </div>
@@ -129,6 +135,25 @@ export default function Sidebar({ recordings, activeId, onSelect, onNew }) {
                     borderRadius: 1, transition: 'width 0.3s',
                   }} />
                 </div>
+              )}
+
+              {/* Delete button */}
+              {isHovered && rec.status !== 'processing' && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(rec.id) }}
+                  title="Löschen"
+                  style={{
+                    position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                    background: 'transparent', border: 0,
+                    color: 'var(--vx-sidebar-muted)', cursor: 'pointer',
+                    padding: '2px 5px', fontSize: 16, lineHeight: 1,
+                    borderRadius: 3,
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#ff5e5e'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--vx-sidebar-muted)'}
+                >
+                  ×
+                </button>
               )}
             </div>
           )
