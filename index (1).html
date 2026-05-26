@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lokal-Transkription</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222;
+    --border: #2e2e2e;
+    --text: #e8e8e8;
+    --muted: #777;
+    --accent: #c8f165;
+    --accent-dim: #8ab33e;
+    --danger: #ff5e5e;
+    --success: #5effa0;
+    --radius: 12px;
+    --font: 'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  .lock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #1c2a12;
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    margin-top: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Model selector */
+  .model-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.9rem 1.2rem;
+  }
+
+  .model-row label {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+  }
+
+  .model-row select {
+    flex: 1;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .model-row select:focus {
+    border-color: var(--accent-dim);
+  }
+
+  .lang-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .lang-row label {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+  }
+
+  .lang-row select {
+    flex: 1;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .config-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.9rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .config-card label {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .config-card select {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    width: 100%;
+  }
+
+  /* Drop zone */
+  #dropzone {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  #dropzone.dragover {
+    border-color: var(--accent);
+    background: #1a2a0a;
+  }
+
+  #dropzone.has-file {
+    border-color: var(--accent-dim);
+    border-style: solid;
+  }
+
+  #dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .drop-title {
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+  }
+
+  .drop-subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .file-info {
+    margin-top: 0.8rem;
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  /* Status */
+  #status-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.2rem;
+    display: none;
+  }
+
+  .status-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  /* Result */
+  #result-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: none;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+  }
+
+  .result-label {
+    font-size: 11px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .result-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn-small {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .btn-small:hover {
+    border-color: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  #transcript-text {
+    padding: 1.2rem;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  /* SRT result */
+  #srt-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: none;
+  }
+
+  #srt-text {
+    padding: 1.2rem;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--muted);
+    white-space: pre-wrap;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%;
+    background: var(--accent);
+    color: #0a1a00;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 1rem;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    display: none;
+  }
+
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.99); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .error-msg {
+    background: #2a1010;
+    border: 1px solid #5a2020;
+    border-radius: var(--radius);
+    padding: 1rem 1.2rem;
+    color: var(--danger);
+    font-size: 13px;
+    display: none;
+  }
+
+  footer {
+    margin-top: 3rem;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  @media (max-width: 480px) {
+    .config-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>// Lokal-Transkription</h1>
+  <p>Audio & Video → Text — direkt im Browser</p>
+  <div class="lock-badge">
+    🔒 100% lokal — keine Daten verlassen dieses Gerät
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Config -->
+  <div class="config-grid">
+    <div class="config-card">
+      <label>Modell</label>
+      <select id="model-select">
+        <option value="Xenova/whisper-tiny">tiny — schnell</option>
+        <option value="Xenova/whisper-base">base — ausgewogen</option>
+        <option value="Xenova/whisper-small" selected>small — empfohlen</option>
+        <option value="Xenova/whisper-medium">medium — langsam</option>
+      </select>
+    </div>
+    <div class="config-card">
+      <label>Sprache</label>
+      <select id="lang-select">
+        <option value="de" selected>Deutsch</option>
+        <option value="en">Englisch</option>
+        <option value="fr">Französisch</option>
+        <option value="es">Spanisch</option>
+        <option value="it">Italienisch</option>
+        <option value="pt">Portugiesisch</option>
+        <option value="ru">Russisch</option>
+        <option value="ja">Japanisch</option>
+        <option value="zh">Chinesisch</option>
+        <option value="ar">Arabisch</option>
+        <option value="null">Auto-Erkennung</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Drop zone -->
+  <div id="dropzone">
+    <input type="file" id="file-input" accept="audio/*,video/*,.mp3,.mp4,.wav,.m4a,.ogg,.webm,.flac,.aac,.mov,.avi,.mkv" />
+    <span class="drop-icon">🎙</span>
+    <div class="drop-title">Datei hierhin ziehen</div>
+    <div class="drop-subtitle">MP3 · MP4 · WAV · M4A · OGG · WEBM · FLAC · AAC · MOV</div>
+    <div class="file-info" id="file-label"></div>
+  </div>
+
+  <!-- Start button -->
+  <button class="btn-primary" id="start-btn" disabled>Transkription starten</button>
+
+  <!-- Error -->
+  <div class="error-msg" id="error-box"></div>
+
+  <!-- Status -->
+  <div id="status-box">
+    <div class="status-line">
+      <div class="spinner"></div>
+      <span id="status-text">Initialisiere...</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- Transcript -->
+  <div id="result-box">
+    <div class="result-header">
+      <span class="result-label">Transkript</span>
+      <div class="result-actions">
+        <button class="btn-small" onclick="copyText()">Kopieren</button>
+        <button class="btn-small" onclick="downloadTxt()">TXT</button>
+        <button class="btn-small" onclick="downloadSrt()">SRT</button>
+      </div>
+    </div>
+    <div id="transcript-text"></div>
+  </div>
+
+  <!-- SRT -->
+  <div id="srt-box">
+    <div class="result-header">
+      <span class="result-label">SRT Untertitel (Vorschau)</span>
+    </div>
+    <div id="srt-text"></div>
+  </div>
+
+</div>
+
+<footer>
+  Powered by OpenAI Whisper via Transformers.js<br>
+  Erstes Laden: Modell wird einmalig heruntergeladen (~40–500 MB)
+</footer>
+
+<script type="module">
+  import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
+
+  env.allowLocalModels = false;
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('file-input');
+  const fileLabel = document.getElementById('file-label');
+  const startBtn = document.getElementById('start-btn');
+  const statusBox = document.getElementById('status-box');
+  const statusText = document.getElementById('status-text');
+  const progressFill = document.getElementById('progress-fill');
+  const resultBox = document.getElementById('result-box');
+  const transcriptEl = document.getElementById('transcript-text');
+  const srtBox = document.getElementById('srt-box');
+  const srtEl = document.getElementById('srt-text');
+  const errorBox = document.getElementById('error-box');
+
+  let selectedFile = null;
+  let transcribeResult = null;
+
+  // Drag & drop
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f) setFile(f);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+  });
+
+  function setFile(f) {
+    selectedFile = f;
+    const sizeMB = (f.size / 1024 / 1024).toFixed(1);
+    fileLabel.textContent = `${f.name} · ${sizeMB} MB`;
+    dropzone.classList.add('has-file');
+    startBtn.style.display = 'block';
+    startBtn.disabled = false;
+    resultBox.style.display = 'none';
+    srtBox.style.display = 'none';
+    errorBox.style.display = 'none';
+  }
+
+  startBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    startBtn.disabled = true;
+    errorBox.style.display = 'none';
+    statusBox.style.display = 'block';
+    resultBox.style.display = 'none';
+    srtBox.style.display = 'none';
+    progressFill.style.width = '0%';
+
+    try {
+      // Decode audio (works for audio and video files)
+      setStatus('Datei wird geladen…', 5);
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      let audioBuffer;
+
+      try {
+        audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      } catch (e) {
+        throw new Error('Dateiformat nicht unterstützt oder Datei beschädigt. Probiere MP3, WAV oder M4A.');
+      }
+
+      const audioData = audioBuffer.getChannelData(0);
+      setStatus('Modell wird geladen (einmalig, bitte warten)…', 15);
+
+      const modelId = document.getElementById('model-select').value;
+      const lang = document.getElementById('lang-select').value;
+
+      const transcriber = await pipeline('automatic-speech-recognition', modelId, {
+        progress_callback: (p) => {
+          if (p.status === 'downloading') {
+            const pct = p.total ? Math.round((p.loaded / p.total) * 100) : 0;
+            setStatus(`Modell wird heruntergeladen… ${pct}%`, 15 + pct * 0.5);
+          }
+          if (p.status === 'ready') {
+            setStatus('Modell bereit. Transkription läuft…', 70);
+          }
+        }
+      });
+
+      setStatus('Transkription läuft…', 70);
+
+      const options = {
+        return_timestamps: true,
+        chunk_length_s: 30,
+        stride_length_s: 5,
+      };
+
+      if (lang !== 'null') {
+        options.language = lang;
+        options.task = 'transcribe';
+      }
+
+      const result = await transcriber(audioData, options);
+      transcribeResult = result;
+
+      setStatus('Fertig.', 100);
+      statusBox.style.display = 'none';
+
+      // Plain text
+      const text = result.text.trim();
+      transcriptEl.textContent = text;
+      resultBox.style.display = 'block';
+
+      // SRT
+      if (result.chunks && result.chunks.length > 0) {
+        const srt = buildSRT(result.chunks);
+        srtEl.textContent = srt;
+        srtBox.style.display = 'block';
+      }
+
+      startBtn.disabled = false;
+
+    } catch (err) {
+      statusBox.style.display = 'none';
+      errorBox.style.display = 'block';
+      errorBox.textContent = 'Fehler: ' + (err.message || String(err));
+      startBtn.disabled = false;
+    }
+  });
+
+  function setStatus(msg, pct) {
+    statusText.textContent = msg;
+    progressFill.style.width = pct + '%';
+  }
+
+  function buildSRT(chunks) {
+    return chunks.map((c, i) => {
+      const start = c.timestamp[0] ?? 0;
+      const end = c.timestamp[1] ?? start + 2;
+      return `${i + 1}\n${toSrtTime(start)} --> ${toSrtTime(end)}\n${c.text.trim()}\n`;
+    }).join('\n');
+  }
+
+  function toSrtTime(s) {
+    const h = Math.floor(s / 3600).toString().padStart(2, '0');
+    const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+    const sec = Math.floor(s % 60).toString().padStart(2, '0');
+    const ms = Math.round((s % 1) * 1000).toString().padStart(3, '0');
+    return `${h}:${m}:${sec},${ms}`;
+  }
+
+  window.copyText = () => {
+    navigator.clipboard.writeText(transcriptEl.textContent);
+  };
+
+  window.downloadTxt = () => {
+    const blob = new Blob([transcriptEl.textContent], { type: 'text/plain' });
+    download(blob, 'transkript.txt');
+  };
+
+  window.downloadSrt = () => {
+    if (!transcribeResult?.chunks) return;
+    const srt = buildSRT(transcribeResult.chunks);
+    const blob = new Blob([srt], { type: 'text/plain' });
+    download(blob, 'transkript.srt');
+  };
+
+  function download(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+</script>
+
+</body>
+</html>
